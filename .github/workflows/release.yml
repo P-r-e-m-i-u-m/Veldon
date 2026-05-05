@@ -5,11 +5,19 @@ on:
     - cron: '0 14 * * 1'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: weekly-release
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           token: ${{ secrets.MY_TOKEN }}
           fetch-depth: 0
@@ -152,9 +160,23 @@ jobs:
           # Add timestamp to make version unique
           VERSION="${VERSION}-$(date +%Y%m%d)"
 
-          git tag -a "$VERSION" -m "Release $VERSION — $RELEASE_TITLE"
-          git push origin "$VERSION"
+          git tag -a "$VERSION" -m "Release $VERSION - $RELEASE_TITLE" || true
+          git push origin "$VERSION" || true
 
-          gh release create "$VERSION" \
-            --title "${VERSION}: ${RELEASE_TITLE}" \
-            --notes-file /tmp/release_notes.md
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "Release $VERSION already exists."
+            exit 0
+          fi
+
+          for attempt in 1 2 3; do
+            if gh release create "$VERSION" \
+              --title "${VERSION}: ${RELEASE_TITLE}" \
+              --notes-file /tmp/release_notes.md; then
+              exit 0
+            fi
+            echo "Release create attempt $attempt failed; retrying..."
+            sleep $((attempt * 10))
+          done
+
+          echo "Release creation failed after retries."
+          exit 1
