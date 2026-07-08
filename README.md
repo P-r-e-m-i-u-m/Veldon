@@ -38,6 +38,7 @@ flowchart LR
   Actions --> Releases["Weekly releases"]
   Services --> GraphqlGW["GraphQL gateway"]
   Services --> ImageProcessing["Image processing"]
+  Middleware --> Tracing["Distributed tracing"]
 ```
 
 ## Tech Stack
