@@ -53,6 +53,7 @@ flowchart LR
   Services --> SearchIndex["Search index"]
   Queue --> BackupJob["Backup job"]
   Services --> EmailService["Email service"]
+  Services --> WebhookHandler["Webhook handler"]
 ```
 
 ## Tech Stack
